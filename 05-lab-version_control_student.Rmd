@@ -8,6 +8,12 @@
 - Create a git repo for the problem sets for the rest of the quarter. Call it ds-environ-[your initials] on your computer. 
 - Connect local to remote repository on github. 
 - Add the GE as a collaborators to the repos on github.
+-Creating a change
+```{r}
+prc<-44
+
+print(prc)
+```
 
 
 ### Question 3 v1 (partners)
