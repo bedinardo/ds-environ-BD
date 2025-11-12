@@ -54,7 +54,13 @@ names(carnivores) <- row_labs_sp
 - 1a. Use the above vector of species names to label the row names of the species occurrence and the body size matrices.  The columns of the species occurrence matrix are time points, so we can leave those as V1 etc., but we should set the column names of the mass matrix as "f", "m" (female and male). Use `head` to check each matrix to see if the names are displayed properly. 
 
 ```{r}
-###  your code here
+rownames(sp_occ)<- row_labs_sp
+sp_occ
+
+rownames(sp_mass)<- row_labs_sp
+sp_mass<- sp_mass %>% 
+  rename(f = V1, m = V2)
+
 ```
 Yeakel recommended an updated equation to estimate the probability a predator consumed a prey based on their relative body masses from [Rohr et al. 2010.](https://doi.org/10.1086/653667). The  probability of existence of a trophic link between a predator of body-size $m_i$ and a prey of body-size $m_j$ is given by:
 
@@ -75,7 +81,14 @@ inv_logit
 ```
 
 ```{r}
-# your code here
+probEat <- function(pred_mass, prey_mass){
+  log_ratio <- log(pred_mass/prey_mass)
+  p <- alpha + beta *log_ratio + gamma * (log_ratio)^2
+  prob<-inv_logit(p)
+  round(prob, 2)
+}
+
+
 ```
 
 - 1c. Now create networks of who eats whom. We will start with adjacency matrices. We will assume all of our species are the size of females. For this step, don`t worry about predators vs. prey yet, just calculate all of the feeding probabilities based on body sizes.  
@@ -83,7 +96,21 @@ inv_logit
 Hint: if you start with a square matrix of all zeros (one row and one column for each species), you can use a for loop to fill in that matrix with probabilities calculated from your function above.
 
 ```{r}
-# your code here
+
+
+sq_matrix<-matrix(NA, nrow = nrow(sp_occ), ncol = nrow(sp_occ))#empty square matrix
+
+colnames(sq_matrix)<- rownames(sp_occ)
+rownames(sq_matrix)<- rownames(sp_occ)
+
+for(i in 1:nrow(sp_occ)){
+  for(j in 1:nrow(sp_occ)){
+    a_mass <- sp_mass[i,"f"]
+    b_mass<- sp_mass[j, "f"]
+   sq_matrix[i,j]<- probEat(a_mass, b_mass)
+  }
+}
+head(sq_matrix)
 
 ```
 
@@ -91,7 +118,11 @@ Hint: if you start with a square matrix of all zeros (one row and one column for
 HINT: the function `sweep` may be useful, though there are many approaches to do the needed matrix multiplication. Print the row and column sums. 
 
 ```{r}
-# your code here
+carnivores
+inter_act <- sweep(sq_matrix, 2, carnivores, `*`)
+print(rowSums(inter_act))
+print(colSums(inter_act))
+
 ```
 
 ### Lab question 2: Breaking the networks into time periods
@@ -103,7 +134,24 @@ Use the function `empty` from the bipartite package to empty the matrix of rows 
 HINT: You will need to zero out the rows where a species in not present in that time period and the columns. The function `sweep` may be useful again.
 
 ```{r}
-###  your code here
+sum(sp_occ[,2])
+present_v2<-sp_occ[,2]
+
+t2_interactions<-sweep(inter_act, 2, present_v2, `*`) #by cols
+t2_interactions<-bipartite::empty(t2_interactions)
+sum((rowSums(t2_interactions) > 0))
+
+test<-inter_act * present_v2
+sum(rowSums(test) > 0)
+
+#key sweep function but works
+t2 <- sweep(inter_act, MARGIN=1, sp_occ[,2], `*`)
+sum(rowSums(t2) > 0)
+#Answer
+t2 <- inter_act * present_v2
+t2 <- sweep(t2, MARGIN=2, sp_occ[,2], `*`)
+sum(rowSums(t2) > 0)
+
 ```
 
 - 2b. Now create a network for all of the time points by creating a list where each element is a network. You will need to use a for loop, or an `lapply` if you feel like experimenting with apply functions. Print the first 5 columns and rows of the 5th time period. 
@@ -111,31 +159,93 @@ HINT: You will need to zero out the rows where a species in not present in that 
 HINT: If choosing the for loop route, remember to create an empty list of a specific length use the function `vector`. To access a specific element of a list, use [[]], for example cool_list[[1]] accesses the first element of the list.
 
 ```{r}
-###  your code here
-```
+num_points<-ncol(sp_occ)
+network_list<-vector("list", length = num_points)
+
+for (t in 1:num_points) {
+  present_time <- sp_occ[, t]
+  
+  # Recompute t2 from scratch each time
+  t2 <- inter_act * present_v2
+  t2 <- sweep(t2, MARGIN = 2, present_time, `*`)
+  time_interaction <- sweep(t2, MARGIN = 1, present_time, `*`)
+  
+  network_list[[t]] <- time_interaction
+}
+
+print(network_list[[5]][1:5, 1:5])
+
+dim(network_list)
+
+
+
+#t2_interactions<-empty(inter_act)
+#t2_interactions<-sweep(t2_interactions, 1, present_v2, `*`) #by rows
+#t2_interactions<-sweep(t2_interactions, 2, present_v2, `*`) #by cols
+#active_rows <- rowSums(t2_interactions > 0) > 0
+#sum(active_rows)
+
 
 ###  Lab question 3: Visualize the networks
 - 3a. Convert the adjacency matrices to igraph class objects using the function `graph_from_adjacency_matrix`. You can use a for loop or an lapply. Because these are food webs, set the argument mode to "directed" and the argument diag to FALSE (this means a species cannot consumer members of its own species, i.e., no canabalism/self-loops). Also remember that these interactions are weighted.  
 
 ```{r}
-###  your code here
+graphing_list <- lapply(network_list, function(mat) {
+  graph_from_adjacency_matrix(mat, mode = "directed", weighted = TRUE, diag = FALSE)
+})
+ #it says that I need square matrix, but they can't be and won't be square because preds are columns and prey is rows, and they are different numbers
+
+
+
+
+
 ```
 
 - 3b. Plot three networks of your choice, using different colors for the predators and prey.
 
 ```{r}
+library(networkD3)
+
+
 ###  assign groups as carnivore or herbivore
+
+groups <- carnivores[V(graphing_list[[1]])$name]
 
 ###  convert to a network 3d object
 
+foodweb_net3d <- igraph_to_networkD3(graphing_list[[1]], group=groups,
+                                       what = "both")
+
 ###  plot the network
+forceNetwork(Links = foodweb_net3d$links,
+             Nodes = foodweb_net3d$nodes,
+            Source = "source", Target = "target",
+            Value = "value",  NodeID = "name",
+             Group = "group",
+            opacity = 0.8, zoom=TRUE, opacityNoHover = 0.9)
 
 ```
 
 ```{r}
-# your code here
+groups_5 <- carnivores[V(graphing_list[[5]])$name]
+foodweb_net3d_5 <- igraph_to_networkD3(graphing_list[[5]], group=groups,
+                                       what = "both")
+forceNetwork(Links = foodweb_net3d_5$links,
+             Nodes = foodweb_net3d_5$nodes,
+            Source = "source", Target = "target",
+            Value = "value",  NodeID = "name",
+             Group = "group",
+            opacity = 0.8, zoom=TRUE, opacityNoHover = 0.9)
 ```
 
 ```{r}
-# your code here
+groups_10 <- carnivores[V(graphing_list[[10]])$name]
+foodweb_net3d_10 <- igraph_to_networkD3(graphing_list[[10]], group=groups,
+                                       what = "both")
+forceNetwork(Links = foodweb_net3d_10$links,
+             Nodes = foodweb_net3d_10$nodes,
+            Source = "source", Target = "target",
+            Value = "value",  NodeID = "name",
+             Group = "group",
+            opacity = 0.8, zoom=TRUE, opacityNoHover = 0.9)
 ```
