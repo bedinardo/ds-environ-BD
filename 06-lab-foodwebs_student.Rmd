@@ -137,16 +137,6 @@ HINT: You will need to zero out the rows where a species in not present in that 
 sum(sp_occ[,2])
 present_v2<-sp_occ[,2]
 
-t2_interactions<-sweep(inter_act, 2, present_v2, `*`) #by cols
-t2_interactions<-bipartite::empty(t2_interactions)
-sum((rowSums(t2_interactions) > 0))
-
-test<-inter_act * present_v2
-sum(rowSums(test) > 0)
-
-#key sweep function but works
-t2 <- sweep(inter_act, MARGIN=1, sp_occ[,2], `*`)
-sum(rowSums(t2) > 0)
 #Answer
 t2 <- inter_act * present_v2
 t2 <- sweep(t2, MARGIN=2, sp_occ[,2], `*`)
@@ -175,15 +165,6 @@ for (t in 1:num_points) {
 
 print(network_list[[5]][1:5, 1:5])
 
-dim(network_list)
-
-
-
-#t2_interactions<-empty(inter_act)
-#t2_interactions<-sweep(t2_interactions, 1, present_v2, `*`) #by rows
-#t2_interactions<-sweep(t2_interactions, 2, present_v2, `*`) #by cols
-#active_rows <- rowSums(t2_interactions > 0) > 0
-#sum(active_rows)
 
 
 ###  Lab question 3: Visualize the networks
