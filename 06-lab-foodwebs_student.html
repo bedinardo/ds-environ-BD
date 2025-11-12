@@ -564,21 +564,6 @@ present in that time period and the columns. The function
 <pre><code>## Error: object &#39;sp_occ&#39; not found</code></pre>
 <pre class="r"><code>present_v2&lt;-sp_occ[,2]</code></pre>
 <pre><code>## Error: object &#39;sp_occ&#39; not found</code></pre>
-<pre class="r"><code>t2_interactions&lt;-sweep(inter_act, 2, present_v2, `*`) #by cols</code></pre>
-<pre><code>## Error: object &#39;inter_act&#39; not found</code></pre>
-<pre class="r"><code>t2_interactions&lt;-bipartite::empty(t2_interactions)</code></pre>
-<pre><code>## Error: object &#39;t2_interactions&#39; not found</code></pre>
-<pre class="r"><code>sum((rowSums(t2_interactions) &gt; 0))</code></pre>
-<pre><code>## Error: object &#39;t2_interactions&#39; not found</code></pre>
-<pre class="r"><code>test&lt;-inter_act * present_v2</code></pre>
-<pre><code>## Error: object &#39;inter_act&#39; not found</code></pre>
-<pre class="r"><code>sum(rowSums(test) &gt; 0)</code></pre>
-<pre><code>## Error: object &#39;test&#39; not found</code></pre>
-<pre class="r"><code>#key sweep function but works
-t2 &lt;- sweep(inter_act, MARGIN=1, sp_occ[,2], `*`)</code></pre>
-<pre><code>## Error: object &#39;inter_act&#39; not found</code></pre>
-<pre class="r"><code>sum(rowSums(t2) &gt; 0)</code></pre>
-<pre><code>## Error: object &#39;t2&#39; not found</code></pre>
 <pre class="r"><code>#Answer
 t2 &lt;- inter_act * present_v2</code></pre>
 <pre><code>## Error: object &#39;inter_act&#39; not found</code></pre>
@@ -613,22 +598,13 @@ for (t in 1:num_points) {
 
 print(network_list[[5]][1:5, 1:5])
 
-dim(network_list)
-
-
-
-#t2_interactions&lt;-empty(inter_act)
-#t2_interactions&lt;-sweep(t2_interactions, 1, present_v2, `*`) #by rows
-#t2_interactions&lt;-sweep(t2_interactions, 2, present_v2, `*`) #by cols
-#active_rows &lt;- rowSums(t2_interactions &gt; 0) &gt; 0
-#sum(active_rows)
 
 
 ###  Lab question 3: Visualize the networks
 - 3a. Convert the adjacency matrices to igraph class objects using the function `graph_from_adjacency_matrix`. You can use a for loop or an lapply. Because these are food webs, set the argument mode to &quot;directed&quot; and the argument diag to FALSE (this means a species cannot consumer members of its own species, i.e., no canabalism/self-loops). Also remember that these interactions are weighted.  </code></pre>
-<pre><code>## Error in parse(text = input): &lt;text&gt;:29:4: unexpected symbol
-## 28: ###  Lab question 3: Visualize the networks
-## 29: - 3a.
+<pre><code>## Error in parse(text = input): &lt;text&gt;:20:4: unexpected symbol
+## 19: ###  Lab question 3: Visualize the networks
+## 20: - 3a.
 ##        ^</code></pre>
 <pre class="r"><code>graphing_list &lt;- lapply(network_list, function(mat) {
   graph_from_adjacency_matrix(mat, mode = &quot;directed&quot;, weighted = TRUE, diag = FALSE)
