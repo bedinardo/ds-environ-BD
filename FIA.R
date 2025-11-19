@@ -6,14 +6,5 @@ library("rFIA")
 library("dplyr")
 library("tidyr")
 
-**Data aquistion**
-  Get all FIA data for Oregon by using rFIA
-```{r}
-options(timeout = 600) #Need to increase download time since file is so large
-#Grab the data
-OR <- getFIA(states = 'OR', dir = "C:/Users/dinardo/OneDrive - University Of Oregon/FIA", load = FALSE) #Install the data
-OR <- readFIA(dir = "C:/Users/dinardo/OneDrive - University Of Oregon/FIA",
-              states = 'OR',
-              nCores = 1,
-              inMemory = TRUE)
-```
+or_fia <- readFIA("C:/Users/Bryce/OneDrive - University Of Oregon/FIA", nCores = 4)
+or_fia <- clipFIA(or_fia)
