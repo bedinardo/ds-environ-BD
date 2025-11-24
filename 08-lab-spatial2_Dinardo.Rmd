@@ -129,7 +129,7 @@ ggplot() +
 4. Write a figure caption for your map explaining any interesting trends you see. 
 5. Export your cropped layer to a .shp so you can use it again for your final project.
 
-```{r plot-bees, fig.cap= "Agapostemon virescens throughout Orgeon by month caught, most bee where caught in the willamette valley}
+```{r plot-bees, fig.cap= "Agapostemon virescens throughout Orgeon by month caught, most bee where caught in the willamette valley"}
 eco_region<-read_sf("C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/ds-environ/labs/data/OR-ecoregions/Ecoregions_OregonConservationStrategy.shp")
 st_crs(eco_region)
 eco_region <- st_transform(eco_region, st_crs(oba_sf))
@@ -149,7 +149,7 @@ or+ annotation_scale(location = "br",  # "br" for bottom right, "tl" for top lef
                          bar_cols = c("black", "white"))+ # Colors for alternating 
   labs(title = "Bee Species Occurrences in Oregon",
        color = "Month Collected")
-st_write(eco_crop, "data/OR-ecoregions/OR-ecoregions-cropped.shp")
+st_write(eco_crop, "C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/ds-environ/labs/data/OR-ecoregions/OR-ecoregions-cropped.shp")
 ```
 
 We are looking forward to seeing the maps you create! 
