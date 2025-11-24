@@ -1,0 +1,221 @@
+## Lab: Spatial data 2: Working with OBA data (Student Version)
+
+
+**Conservation/ecology Topics** 
+
+- Species distributions 
+
+**Computational Topics**
+-  Convert a data frame to a spatial object.
+-  Plot multiple spatial layers.
+
+```{r load-libraries-lab, echo=FALSE, results="hide", message=FALSE, warning=FALSE}
+library(terra)
+library(ggplot2)
+library(dplyr)
+library(sf)
+library(ggspatial)
+```
+
+**Lab part 1: Oregon bee atlas data exploration** 
+
+- 1a. Import the OBA data. (remember it's in the main data folder of the book and not in the labs folder, so you have to move back a folder)
+```{r}
+oba_data<-read.csv("C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/ds-environ/data/OBA_2018-2024.csv")
+```
+
+- 1b. Find the columns related to genus and species and paste them together (with a space between) using the function paste(). Name the new column GenusSpecies.
+```{r}
+head(oba_data)
+oba_gensp<-oba_data %>% 
+  mutate(GenusSpecies = paste(genus, specificEpithet, sep = " "))
+```
+
+- 1c. Use `sort()` and `unique()` to print the unique values of GenusSpecies in alphabetical order.  How many species are there? 
+
+```{r}
+sorted_oba<-sort(unique(oba_gensp$GenusSpecies))
+length(sorted_oba)
+#587 species
+```
+
+Some specimens are not identified to species, only genus. How is this reflected in the data? 
+Answer: Just as the genus name and then a space
+
+- 1d. So many bees, so little time. Count up the occurrences of each bee species, and subset the data to bees that have been seen at least two times. 
+You can use the tidyverse or any other functions in R that you like. How many "species" are there? 
+
+```{r}
+oba <- oba_gensp %>%
+  group_by(GenusSpecies) %>%
+  summarise(occ = n()) %>%
+  ungroup() %>%
+  filter(occ >= 2, !is.na(GenusSpecies))
+head(oba, n = 10)
+sum(oba$occ < 2, na.rm = TRUE)
+nrow(oba)
+#500+ species
+```
+
+- 1e. Google a few bee names (that have been seen > 2 times) and find one with an a look that resonates with you.
+
+What is the name of your bee? 
+Agapostemon virescens
+
+Import the photos into Rmarkdown below (hint: googling bee name "discover life" or "inat" can often get you a photo. Many bees will no have any photos :(  use the format
+
+![](C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/spirt_bee.png){alt='My spirt bee: ****'}
+
+**Lab part 2: Plotting the distribution of your spirit bee.** 
+
+How that have chosen your spirit bee, we would like to plot it's distribution. What is the crs of the data? Annoyingly it is not described anywhere in the spreadsheet (always list your crs in your data) but it is the same as what inat uses because all bees have a georeferenced plant host. If the data is in lat long, it is "unprojected" so only a datum will be listed. 
+DATUM: WGS84, unprojected lat long. EPSG code: 4326. 
+
+
+```{r}
+crs("EPSG:4326")
+```
+
+- 2a. Extract the X and Y locations for your species only from the data and create a spatial object. Don't forget to set the CRS! 
+Hint 1: consider what other data you would like to keep as attributes, for example what flower they were foraging on. Hint 2: Remember the lat is y and long is x. 
+Hint 3: You may want to rename the column names you can use, `colnames()` or `rename()` from dplyr and reassign the names. This is only if you don't love the names they already have. 
+
+```{r}
+head(oba_data)
+oba_spatical<-oba_gensp %>% 
+  select(decimalLatitude, decimalLongitude,GenusSpecies, year, month, county,	
+verbatimElevation) %>% 
+  filter(GenusSpecies == "Agapostemon virescens")
+
+oba_sf <- st_as_sf(oba_spatical, coords = c("decimalLongitude", "decimalLatitude"), crs = "EPSG:4326")
+
+```
+
+- 2b. Plot your exciting bee data!
+
+```{r plot-data-points-lab}
+ggplot() +
+  geom_sf(data = oba_sf, fill = NA, color = "blue", size = 1) +
+  theme_minimal()
+```
+
+Not so exciting without some kind of background... 
+
+Luckily we can download basemaps into R using the map_data function in ggplot (among many others). There is an example for retrieving the Oregon county polygons. 
+
+```{r plot-or}
+or <- map_data("county", "oregon") %>% 
+  select(lon = long, lat, group, id = subregion)
+```
+
+- 2c. Add your species's points to your choice or an Oregon basemap. 
+
+```{r plot-data-points-basemap-lab}
+ggplot() +
+  geom_polygon(data = or, aes(x = lon, y = lat, group = group),
+               fill = "lightgray", color = "white") +
+  geom_sf(data = oba_sf, fill = NA, color = "blue", size = 1)
+
+
+```
+
+**Lab part 3: Cartography**
+
+- 3a. Here is your moment to explore your cartographic skills. 
+
+1. Add the ecoregion shape file (in data/OR-ecoregions) and tweek the Oregon map in anyway that is useful/visually appealing. You may need to crop that layer to the extent of your species's distribution if it is only in a few ecoregions. 
+2. Color your points according to some data attribute and add a legend (month collected, county, collector, associated plant, whatever you think is interesting). You may need to circle back to 2.1 to save additional attributes when you converted the dataframe to a spatial object. 
+3. Fine-tune your map: add a title, make sure the legend label makes sense, add a scale bar (google "add scale bar map ggplot" and choose your favorite package). All maps must always have a scale bar. You can add a N arrow as well, though some cartographers argue that is only necessary if N isn't at the top of the map.
+4. Write a figure caption for your map explaining any interesting trends you see. 
+5. Export your cropped layer to a .shp so you can use it again for your final project.
+
+```{r plot-bees, fig.cap= "Agapostemon virescens throughout Orgeon by month caught, most bee where caught in the willamette valley}
+eco_region<-read_sf("C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/ds-environ/labs/data/OR-ecoregions/Ecoregions_OregonConservationStrategy.shp")
+st_crs(eco_region)
+eco_region <- st_transform(eco_region, st_crs(oba_sf))
+eco_crop <- st_crop(eco_region, st_bbox(oba_sf))
+
+or<-ggplot() +
+  geom_sf(data = eco_crop, aes(fill = Ecoregion), alpha = 0.4) +
+  geom_sf(data = oba_sf, aes(color = factor(month)), size = 1, alpha = 0.7) +
+  theme_minimal() +
+  labs(color = "Month Collected")
+
+or+ annotation_scale(location = "br",  # "br" for bottom right, "tl" for top left, etc.
+                         pad_x = unit(0.2, "in"), # Padding from the x-axis
+                         pad_y = unit(0.2, "in"), # Padding from the y-axis
+                         height = unit(0.05, "in"), # Height of the scale bar
+                         text_cex = 0.7, # Text size
+                         bar_cols = c("black", "white"))+ # Colors for alternating 
+  labs(title = "Bee Species Occurrences in Oregon",
+       color = "Month Collected")
+st_write(eco_crop, "data/OR-ecoregions/OR-ecoregions-cropped.shp")
+```
+
+We are looking forward to seeing the maps you create! 
+
+**Lab part 4: Spatial summary statistics**
+ For your final projects, you will likely need to come up with summary statistics that describes the areas around where bees are captured. 
+
+- 4a. Using the distribution of your chosen bee and the a raster spatial layer from [Oregon Geohub](https://geohub.oregon.gov/), extract a meaningful summary statistics from your spatial layer within a buffer of 500, 750 1000 m.
+```{r}
+#Im going to look at the the mean soil water content is by the bee, see if where they were caught is close to wetlands/moisture environments
+soils<-read_sf("C:/Users/Bryce/OneDrive - University Of Oregon/Data_Sci/ds-environ/labs/data/Oregon_Wetland_Soils.shp")
+st_crs(soils)
+oba_sf_proj <- st_transform(oba_sf, 32610)
+soils_proj  <- st_transform(soils, 32610)
+
+# Convert soils to terra vector and rasterize
+soils_vect <- vect(soils_proj)
+r_template <- rast(ext=ext(soils_vect), resolution=30)  # 30 m cells
+soils_rast <- rasterize(soils_vect, r_template, field="HYDRIC_PCT")
+
+buffers_500 <- st_buffer(oba_sf_proj, dist=500)
+buffers_750 <- st_buffer(oba_sf_proj, dist=750)
+buffers_1000 <- st_buffer(oba_sf_proj, dist=1000)
+# Extract mean hydric % within buffers
+vals_500 <- terra::extract(soils_rast, buffers_500, fun=mean, na.rm=TRUE)
+head(vals_500)
+
+vals_750<-terra::extract(soils_rast, buffers_750, fun=mean, na.rm=TRUE)
+
+vals_1000<-terra::extract(soils_rast, buffers_1000, fun=mean, na.rm=TRUE)
+head(vals_1000)
+
+```
+
+- 4b. Create a plot that illustrates this summary data (box plot, barplot, scatter plot, historgram). 
+```{r}
+#Need to make a new column in each matirx to single which one it is and then combine data frames
+vals_500$buffer_m <- 500
+vals_750$buffer_m <- 750
+vals_1000$buffer_m <- 1000
+hydric_perc_bufferes<-bind_rows(vals_500, vals_750, vals_1000)
+#and plots
+ggplot(hydric_perc_bufferes, aes(x = factor(buffer_m), y = HYDRIC_PCT)) +
+  geom_boxplot(fill = "steelblue") +
+  labs(title = "Hydric % around bee captures",
+       x = "Buffer distance (m)",
+       y = "Mean Hydric Percentage")
+```
+
+- 4c. Create a map of your cropped spatial data.
+
+```{r}
+soils_df<-as.data.frame(soils_rast, xy = TRUE, na.rm = TRUE)
+buffers_500$buffer_m <- 500
+buffers_750$buffer_m <- 750
+buffers_1000$buffer_m <- 1000
+buffers_all <- rbind(buffers_500, buffers_750, buffers_1000)
+
+ggplot() +
+  geom_raster(data=soils_df, aes(x=x, y=y, fill=HYDRIC_PCT)) +
+  scale_fill_viridis_c(name="Hydric %") +
+  geom_sf(data=buffers_all, aes(color=factor(buffer_m)), fill=NA) +
+  geom_sf(data=oba_sf_proj, color="black", size=2) +
+  labs(title="Hydric Soils and Bee Capture Buffers",
+       x="Longitude", y="Latitude", color="Buffer (m)") +
+  theme_minimal()
+
+
+```
